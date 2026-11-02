@@ -1,0 +1,5 @@
+numpy>=1.26
+opencv-python>=4.8
+rapidfuzz>=3.0
+torch>=2.6
+ultralytics>=8.3
