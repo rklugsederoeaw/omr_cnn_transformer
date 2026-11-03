@@ -1,57 +1,59 @@
-# OMR für gregorianische Notenzeilen
+# Optical Music Recognition for Gregorian chant
 
-Dieses Repo enthält eine eigenständig nutzbare Fassung des CRNN/Transformer-Modells `hybrid_hybrid_general_v10`, das Melodiemodell `decoder_lm_diff`, die für die Konkordanzbewertung benötigten CantusDB-Felder und zwei Layoutmodelle. Die Trainingsbilder und internen Forschungsdokumente sind für die Anwendung nicht erforderlich und liegen nicht hier.
+This repository provides a standalone inference package for the `hybrid_hybrid_general_v10` CRNN/Transformer model. It includes the `decoder_lm_diff` melody model, the CantusDB fields needed for concordance scoring, and two page layout models. Training images and internal research documents are not needed to run inference and are not included.
 
 ## Installation
 
-Python 3.12 oder neuer. Eine passende PyTorch-Installation für CPU oder NVIDIA-GPU wird benötigt.
+Use Python 3.12 or newer and install a PyTorch build suitable for your CPU or NVIDIA GPU.
 
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-## Notenzeile lesen
+## Read a notation line
 
-Der zuverlässige Eingabetyp ist eine **zugeschnittene Notenzeile** (JPG oder PNG). Die Ausgabe ist JSON mit geometrischen Notentokens. `gelesen` kombiniert Bildmodell und Melodiemodell. `ohne_vorwissen` verwendet nur CTC und Attention.
+The most reliable input is an image cropped to a **single notation line** (JPG or PNG). The command prints JSON containing geometric music tokens. `gelesen` combines the image model and melody model; `ohne_vorwissen` uses only the image model's CTC and attention scores.
 
 ```bash
 .venv/bin/python -m omr.predict examples/001r_01_with_clef.jpg
 ```
 
-Mit bekannter CantusDB-Quell-ID und Folio wird zusätzlich die Konkordanzbewertung aktiviert:
+If the CantusDB source ID and folio are known, add concordance scoring:
 
 ```bash
 .venv/bin/python -m omr.predict examples/001r_01_with_clef.jpg --source-id 123667 --folio 001r
 ```
 
-Für eine Notenzeile auf einem größeren Bild kann `--bbox X1 Y1 X2 Y2` angegeben werden. Ohne `--source-id` und `--folio` ist keine CantusDB-Abfrage nötig. Die kompakte Datenbank `weights/cantus_rag.sqlite` ist nur für diese optionale Bewertung nötig.
+Use `--bbox X1 Y1 X2 Y2` to select a notation line within a larger image. The compact `weights/cantus_rag.sqlite` database is used only when both `--source-id` and `--folio` are supplied.
 
-## Ganze Seite
+The token sequence uses `l1`, `l2`, etc. for staff lines, `z1`, `z2`, etc. for spaces, clef tokens such as `f2`, and `,` as the separator used by the model. The returned `konfidenz` is an attention log score per token; higher values indicate a better model fit. It is not a calibrated probability.
 
-`omr.page` sucht Notationsregionen mit YOLO und liest jede gefundene Region. Das ist eine automatische Vorschau; die erkannten Ausschnitte sollten geprüft und bei Bedarf als einzelne Zeilen mit `--bbox` gelesen werden.
+## Read a full page
+
+`omr.page` detects notation regions with YOLO and reads each region. Treat these results as a preview: inspect the reported bounding boxes and reread individual lines with `--bbox` where needed.
 
 ```bash
-.venv/bin/python -m omr.page seite.jpg --layout handschrift
-.venv/bin/python -m omr.page seite.jpg --layout druck
+.venv/bin/python -m omr.page page.jpg --layout handschrift
+.venv/bin/python -m omr.page page.jpg --layout druck
 ```
 
-`--source-id` und `--folio` sind auch hier möglich. Auf einer GPU wird CUDA automatisch genutzt; mit `--device cpu` kann die CPU erzwungen werden. Die JSON-Ausgabe enthält die Koordinaten jeder Region.
+The page command also accepts `--source-id` and `--folio`. CUDA is selected automatically when available; use `--device cpu` to force CPU inference. The JSON output includes each region's coordinates.
 
-Die mitgelieferte Beispielzeile kann geprüft werden:
+Check the bundled example against its reference transcription:
 
 ```bash
 .venv/bin/python -m omr.check
 ```
 
-## Inhalt und Herkunft
+## Contents and provenance
 
-- `omr/model.py`: CRNN/Transformer-Architektur und Beam-Suche, aus den lokalen Projektdateien `skripte/hybrid.py`, `skripte/decoder_lm.py`, `skripte/joint.py` und `omr_cli/src/core/models/crnn.py` auf die Inferenz reduziert.
-- `omr/predict.py`: Vorverarbeitung, Kandidaten und gemeinsame CTC/Attention/Melodiemodell-Bewertung.
-- `omr/rag.py`: Konkordanzbewertung wie in `skripte/rag_bewertung.py`, `rag_bewertung2.py`, `rag_bewertung3.py` und `lesen_rag.py`.
-- `omr/page.py`: optionale Layout-Erkennung. Die Layoutgewichte stammen aus `modelle/layout/{handschrift,druck}_s1/weights/best.pt`.
-- `weights/hybrid_hybrid_general_v10.pt`: OMR-Gewichte (Stand 23.10.2026), inklusive Token `c5`.
-- `weights/decoder_lm_diff.pt`: Melodiemodell mit Psalmdifferenzen; `weights/decoder_lm_vocab.json` und `weights/volpiano3_musici2w.json` definieren die Tokenreihenfolge.
-- `weights/cantus_rag.sqlite`: nur `source_id`, `folio`, `sequence`, `cantus_id`, `volpiano` aus der CantusDB, ohne übrige Forschungsdaten.
+- `omr/model.py`: CRNN/Transformer architecture and beam search, adapted for inference from `skripte/hybrid.py`, `skripte/decoder_lm.py`, `skripte/joint.py`, and `omr_cli/src/core/models/crnn.py` in the source projects.
+- `omr/predict.py`: image preprocessing, candidate generation, and combined CTC/attention/melody-model scoring.
+- `omr/rag.py`: concordance scoring adapted from `skripte/rag_bewertung.py`, `rag_bewertung2.py`, `rag_bewertung3.py`, and `lesen_rag.py`.
+- `omr/page.py`: optional page layout detection. Its weights come from `modelle/layout/{handschrift,druck}_s1/weights/best.pt`.
+- `weights/hybrid_hybrid_general_v10.pt`: OMR model weights from 23 October 2026, including the `c5` token.
+- `weights/decoder_lm_diff.pt`: melody model trained with psalm differentiae. The two vocabulary JSON files define the token order.
+- `weights/cantus_rag.sqlite`: compact CantusDB extract containing only `source_id`, `folio`, `sequence`, `cantus_id`, and `volpiano`.
 
-Die Lesekette ist für vorhandene Gewichte gedacht. Der vollständige Trainingskorpus und die Trainingsskripte gehören nicht zu diesem Anwendungspaket.
+This package runs the supplied weights. The full training corpus and training scripts are outside its scope.
