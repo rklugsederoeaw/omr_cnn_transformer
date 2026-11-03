@@ -85,6 +85,54 @@ These are sums of log scores, except for the concordance bonus; they are not pro
 
 **Scope.** The optional YOLO models locate notation regions on full pages. The packaged page command uses their rectangular boxes as an automatic preview; it does not implement the full editorial reading-order or ground-truth review workflow described in the research report. The checkpoint dates from 23 October 2026. Metrics reported for earlier checkpoints or different decoding settings should not be read as a benchmark for this exact command.
 
+## Measured results and ablations
+
+**Symbol error rate (SER)** is edit distance over music tokens divided by the number of reference tokens; lower is better. The line-level results below use ground-truth crops. They come from distinct, explicitly named experiments in the source project and must not be combined into a single score for the packaged page command. The fixed test set has 3,084 lines from the older sources. The A-KN 1012 leave-one-source-out (LOSO) test has 1,175 lines from a manuscript excluded from that experiment's image-model training.
+
+### Decoder initialization: with and without melody-LM pretraining
+
+Both hybrid variants use the same older training index and fixed test set, a CRNN v3 encoder initialization, 25 training epochs, and joint CTC/attention decoding with weights selected on validation data. Here **LM pretraining** means initializing the image model's Transformer decoder from a CantusDB melody model *before image training*; it is separate from adding a third scoring model at inference.
+
+| Image model | Decoder initialized from melody LM? | CTC SER | Attention SER | Joint SER |
+| --- | :---: | ---: | ---: | ---: |
+| CTC-only baseline, corrected LSTM | No decoder | 7.09% | — | — |
+| Hybrid (`hybrid_hybrid_lang`) | Yes | 7.38% | 6.50% | **5.71%** |
+| Hybrid (`hybrid_scratch`) | No | 7.25% | 6.82% | 5.85% |
+
+Source: `docs/hybrid_vergleich.md` in the training project. The decoder-pretraining comparison concerns the earlier hybrid checkpoints, not a retraining of `general_v10`.
+
+### Third scoring model and CantusDB concordances
+
+The **third scoring model** is an independent melody LM used to rerank image-model candidates (*shallow fusion*). The concordance term compares them with CantusDB versions from other sources. Each row below changes these two inference signals while keeping its own test set and image checkpoint fixed. Candidate generation here used beam 12 and alternative initial clefs. The CTC/attention length bonus and the LM/concordance weights were selected separately on validation data; thus this is an ablation of the complete selection procedure, not a fixed-weight toggle test.
+
+| Evaluation / image checkpoint | Independent melody LM | CantusDB concordances | Test token SER |
+| --- | :---: | :---: | ---: |
+| Fixed 3,084 lines / `hybrid_hybrid_lang` | No | No | 5.67% |
+| Fixed 3,084 lines / `hybrid_hybrid_lang` | Yes* | No | 5.67% |
+| Fixed 3,084 lines / `hybrid_hybrid_lang` | No | Yes | 5.66% |
+| Fixed 3,084 lines / `hybrid_hybrid_lang` | Yes | Yes | **5.64%** |
+| A-KN 1012 LOSO, 1,175 lines / `hybrid_scratch_loso1012` | No | No | 13.08% |
+| A-KN 1012 LOSO, 1,175 lines / `hybrid_scratch_loso1012` | Yes | No | 12.70% |
+| A-KN 1012 LOSO, 1,175 lines / `hybrid_scratch_loso1012` | No | Yes | 12.89% |
+| A-KN 1012 LOSO, 1,175 lines / `hybrid_scratch_loso1012` | Yes | Yes | **12.66%** |
+
+*For the fixed-set LM-only row, validation selected an LM weight of zero, so that row is numerically identical to the no-prior baseline. The LOSO image model excluded A-KN 1012 from training, and its independent melody LM excluded that source's melodies; concordances came from other sources. These four-way results are from `docs/rag.md` (`fest2` and `loso1012_2`) in the training project. The image checkpoints and LM in these ablations differ from the bundled `general_v10` and `decoder_lm_diff` weights.
+
+A later concordance variant restricts clef changes to the majority transposition of the matched melodies. With this guard, the **combined** LM and concordance path measured 5.65% token SER and 5.78% melody SER on the fixed set (baseline 5.67% / 5.97%), and 12.63% / 15.52% on A-KN 1012 (baseline 13.08% / 18.47%). These are the reproducibility-corrected results in `docs/rag.md`; melody SER measures pitches after applying the read clef, not the geometric tokens used for token SER.
+
+The bundled `general_v10` checkpoint has a separate **5.72% joint token SER** on the fixed 3,084-line test set under the original `skripte/joint.py` beam-6 protocol (validation-selected CTC weight 0.5 and length bonus 1.0; source: `docs/hybrid_hybrid_general_v10.md`). The package's `omr.predict` uses different weights and no length bonus. No SER for the exact packaged command or end-to-end page pipeline has been measured here.
+
+### YOLO page-layout models
+
+The packaged `handschrift` and `druck` weights are the final YOLO26s-seg `best.pt` checkpoints. The test sets were held out **by source**, and the comparison is against existing PAGE-XML region labels. Box metrics apply to the rectangular detections used by `omr.page`; mask metrics assess the segmentation output of the weights, although the page command currently uses boxes.
+
+| Layout model | Held-out test pages | Box mAP@50 | Box mAP@50:95 | Mask mAP@50 | Mask mAP@50:95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Manuscripts (`layout_handschrift.pt`) | 1,938 | 0.8813 | 0.6853 | 0.8812 | 0.6327 |
+| Prints (`layout_druck.pt`) | 1,256 | 0.9588 | 0.7754 | 0.9638 | 0.7613 |
+
+Source: `docs/yolo_layout_bericht.md`, “Abschluss und Testsplit-Ergebnisse (25.10.2026)”, in the training project. These are aggregate region-detection scores, not notation-only recall, independently verified polygon accuracy, or end-to-end page transcription SER. The documented A-KN 1012 layout transfer probe showed weak detection of notation on an atypical manuscript, so the scores should not be generalized to every source style.
+
 ## Training and ground truth for `general_v10`
 
 The checkpoint was built in three stages:
@@ -103,7 +151,7 @@ The following counts are **entries accepted by the training data loader**, not c
 | Solesmes (AMNLT) | 1,146 (382 lines × 3) | 51 | 76 | Source-page-level split. |
 | **Total** | **61,124** | **4,094** | **4,302** | The AMNLT data were split by page or folio rather than retaining their original line-level splits. |
 
-The source project's 23 October log reports **5.72% token symbol error rate** for `general_v10` on the fixed 3,084-line test set using its original joint-decoding evaluation. That measurement uses settings different from this package's default command and is not an accuracy claim for `omr.predict` or `omr.page`. The bundled `omr.check` is a compatibility check on one example, not a benchmark.
+The `general_v10` joint-decoding result and its protocol are reported in the results section above. The bundled `omr.check` is a compatibility check on one example, not a benchmark.
 
 The image GT, complete CantusDB, training scripts, and the human/agent review workflow are not included in this inference repository. Only the model weights, vocabularies, compact concordance extract, inference code and example are included.
 
