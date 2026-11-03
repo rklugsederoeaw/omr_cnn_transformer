@@ -118,3 +118,9 @@ The image GT, complete CantusDB, training scripts, and the human/agent review wo
 - `weights/cantus_rag.sqlite`: compact CantusDB extract containing only `source_id`, `folio`, `sequence`, `cantus_id`, and `volpiano`.
 
 This package runs the supplied weights. The full training corpus and training scripts are outside its scope.
+
+## Acknowledgements
+
+The training CLI and the original CNN–BiLSTM–CTC (CRNN) architecture come from the Pattern Recognition and Artificial Intelligence Group (PRAIG) at the University of Alicante. They were developed in the collaboration between PRAIG and the Austrian Academy of Sciences on plainchant OMR. The upstream CLI is available at [ACDHxUA/CLI](https://github.com/ACDHxUA/CLI); its initial code release was committed by Adrián Roselló.
+
+This project builds on that CRNN baseline and training framework. We thank Jorge Calvo-Zaragoza and the PRAIG team for their collaboration. The hybrid CTC/attention extension, melody-model scoring and CantusDB concordance scoring described above were added in this project.
