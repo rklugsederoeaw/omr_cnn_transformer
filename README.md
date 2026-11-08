@@ -83,6 +83,8 @@ score = 0.3 × CTC + 0.7 × attention + 0.1 × melody model
 
 These are sums of log scores, except for the concordance bonus; they are not probabilities. This packaged command has no length bonus (`β = 0`), although some earlier experiments used one. Concordance scoring obtains the chants assigned to the folio from the bundled compact CantusDB extract, compares each candidate's pitches with versions in other sources, and checks the majority transposition before rewarding a changed clef. It chooses among image-generated candidates; it does not copy a database melody into the output. Without a source ID and folio, this term is absent.
 
+**Optional clef lock.** `--lm-clef-lock` (off by default, available in `omr.predict` and `omr.page`) keeps the melody model from changing the initial clef. The score without the melody model (image heads plus concordance, when supplied) fixes the clef first, and the melody model then chooses only among candidates with that clef. Concordance scoring can still change the clef. See the [clef-lock ablation](#melody-model-and-the-initial-clef) before enabling it.
+
 **Scope.** The optional YOLO models locate notation regions on full pages. The packaged page command uses their rectangular boxes as an automatic preview; it does not implement the full editorial reading-order or ground-truth review workflow described in the research report. The checkpoint dates from 23 October 2026. Metrics reported for earlier checkpoints or different decoding settings should not be read as a benchmark for this exact command.
 
 ## Measured results and ablations
@@ -121,6 +123,47 @@ The **third scoring model** is an independent melody LM used to rerank image-mod
 A later concordance variant restricts clef changes to the majority transposition of the matched melodies. With this guard, the **combined** LM and concordance path measured 5.65% token SER and 5.78% melody SER on the fixed set (baseline 5.67% / 5.97%), and 12.63% / 15.52% on A-KN 1012 (baseline 13.08% / 18.47%). These are the reproducibility-corrected results in `docs/rag.md`; melody SER measures pitches after applying the read clef, not the geometric tokens used for token SER.
 
 The bundled `general_v10` checkpoint has a separate **5.72% joint token SER** on the fixed 3,084-line test set under the original `skripte/joint.py` beam-6 protocol (validation-selected CTC weight 0.5 and length bonus 1.0; source: `docs/hybrid_hybrid_general_v10.md`). The package's `omr.predict` uses different weights and no length bonus. No SER for the exact packaged command or end-to-end page pipeline has been measured here.
+
+### Melody model and the initial clef
+
+The independent melody LM often changes the initial clef. The clef lock prevents that. The table uses the fixed 3,084 lines, `hybrid_hybrid_lang`, beam 12 with alternative initial clefs, and the weights stated in the first column. It does not use the bundled `general_v10` checkpoint.
+
+| Length bonus β / LM μ / concordance ρ | Variant | Token SER | Note SER | Melody SER | Correct initial clefs (of 3,069) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 0.5 / 0 / 0 | No prior knowledge | 5.67% | 5.15% | 5.97% | 2,926 |
+| 0.5 / 0.1 / 0 | Melody LM | 5.69% | 5.13% | 6.04% | 2,837 |
+| 0.5 / 0.1 / 0 | Melody LM, clef lock | 5.64% | 5.13% | 6.07% | 2,926 |
+| 0.5 / 0.05 / 0.5 | Melody LM + concordance | 5.65% | 5.13% | 5.78% | 2,898 |
+| 0.5 / 0.05 / 0.5 | Melody LM + concordance, clef lock | 5.63% | 5.13% | 5.96% | 2,926 |
+| 0 / 0.1 / 1 | Packaged weights | 5.71% | 5.13% | 6.10% | 2,829 |
+| 0 / 0.1 / 1 | Packaged weights, clef lock | 5.67% | 5.13% | 6.41% | 2,912 |
+
+The lock raises initial-clef accuracy and slightly lowers token SER, but melody SER does not improve and becomes worse together with concordance scoring. The reason has not been established. The lock therefore stays off by default. It is not tested on an unseen manuscript. Source: `docs/hybrid_vergleich.md` in the training project.
+
+### CTC without the Transformer decoder
+
+Prefix beam search (width 64) over a CTC-only model, with the unchanged melody LM rescoring the candidates, measured on the fixed 3,084 lines. The CTC-only model is the ONNX export of `hybrid_ctc_lang`; the length bonus and LM weight were selected on validation data.
+
+| Decoding | Token SER | Without separators | Note SER | Correct initial clefs (of 3,069) |
+| --- | ---: | ---: | ---: | ---: |
+| CTC greedy | 7.08% | 6.45% | 6.05% | 2,754 |
+| CTC prefix beam | 6.86% | 6.32% | 5.92% | 2,753 |
+| CTC prefix beam + melody LM | 6.70% | 6.20% | 5.69% | 2,642 |
+| Hybrid joint decoding (`hybrid_hybrid_lang`, beam 6) | 5.71% | 5.37% | 5.19% | 2,929 |
+| Best of the 64 CTC candidates (oracle) | 4.92% | 4.97% | 4.75% | 2,869 |
+
+Beam search and the melody LM recover 0.38 of the 1.37 points between CTC greedy and joint decoding, so they do not replace the decoder. The oracle row shows that better readings are often already among the candidates; selection is the limiting step. This path was not tested on an unseen manuscript, because the CTC-only LOSO weights no longer exist.
+
+### Padding in the BiLSTM
+
+The BiLSTM in the training and research code runs over the white padding of a batch, so a reading can depend on its neighbours in the batch. Measured with `hybrid_hybrid_lang` on the fixed 3,084 lines (batch 16, index order, 10.9% padding frames, greedy decoding):
+
+| Head | Padded batch | Each line alone | `pack_padded_sequence` |
+| --- | ---: | ---: | ---: |
+| CTC | 7.40% | 7.45% | 7.47% |
+| Attention | 6.42% | 6.63% | 6.94% |
+
+Compared with reading each line alone, 436 CTC readings and 238 attention readings change, but accuracy does not suffer. The packed variant is applied to a model trained with padding, so it is not a retraining result. `omr.predict` reads each line alone and is therefore independent of batch composition; on this earlier checkpoint that setting measured slightly worse for attention than padded batches.
 
 ### YOLO page-layout models
 
