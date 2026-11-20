@@ -225,7 +225,11 @@ The models were trained on staff crops of digitised manuscripts; the images are 
 | --- | --- |
 | CH-E 611, CH-Fco Ms. 2, CH-P 18 (e-codices) | CC BY-NC |
 | D-Mbs Clm 2766 (Bayerische Staatsbibliothek) | CC BY-NC-SA 4.0 |
-| D-KA Aug. LX with addendum (Badische Landesbibliothek), D-KNd 1161 (Dombibliothek Köln), F-Pn lat. 12044 (BnF), A-Wn Cod. 1799** and Mus.Hs. 15484 (Österreichische Nationalbibliothek), A-Gu 17 (Universitätsbibliothek Graz) | public libraries, scientific use |
+| D-KA Aug. LX (Aug. perg. 60) with addendum (Badische Landesbibliothek Karlsruhe) | terms of use: https://digital.blb-karlsruhe.de/wiki/wiki4062351 |
+| D-KNd 1161 | © Erzbischöfliche Diözesan- und Dombibliothek Köln |
+| F-Pn lat. 12044 (Bibliothèque nationale de France, Gallica) | terms for AI use: https://www.bnf.fr/fr/loffre-de-services-de-la-bnf-pour-les-acteurs-de-lintelligence-artificielle-ia |
+| A-Wn Cod. 1799** and Mus.Hs. 15484 (Österreichische Nationalbibliothek) | terms of use: https://www.onb.ac.at/nutzung |
+| A-Gu 17 (Universitätsbibliothek Graz) | CC BY-NC-SA 3.0 AT; source: Universitätsbibliothek Graz |
 | Austrian holdings (A-KN, A-Gf, A-Geras, A-VOR, A-MB, A-SF, A-Wda, A-LIktu, A-BRLm, A-BRz) and the Italian holdings I-BREmd (Taisten) and I-SCass, photographed by the author | Austrian Academy of Sciences |
 | Salzinnes and Solesmes (AMNLT) | CC BY-NC 4.0 (dataset licence) |
 

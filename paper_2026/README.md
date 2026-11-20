@@ -68,10 +68,10 @@ The models were trained on staff crops of the following digitised manuscripts. T
 | Source | Holding institution | Images |
 | --- | --- | --- |
 | CH-E 611, CH-Fco Ms. 2, CH-P 18 | Stiftsbibliothek Einsiedeln; Franziskanerkloster Freiburg/Fribourg; Bibliothèque cantonale jurassienne, Porrentruy | e-codices, CC BY-NC |
-| D-KA Aug. LX (Aug. perg. 60) with addendum | Badische Landesbibliothek Karlsruhe | public library, scientific use |
-| D-KNd 1161 | Erzbischöfliche Diözesan- und Dombibliothek Köln | public library, scientific use |
-| F-Pn lat. 12044 | Bibliothèque nationale de France (Gallica) | public library, scientific use |
-| A-Wn Cod. 1799** | Österreichische Nationalbibliothek | public library, scientific use |
+| D-KA Aug. LX (Aug. perg. 60) with addendum | Badische Landesbibliothek Karlsruhe | terms of use: https://digital.blb-karlsruhe.de/wiki/wiki4062351 |
+| D-KNd 1161 | Erzbischöfliche Diözesan- und Dombibliothek Köln | © Erzbischöfliche Diözesan- und Dombibliothek Köln |
+| F-Pn lat. 12044 | Bibliothèque nationale de France (Gallica) | terms for AI use: https://www.bnf.fr/fr/loffre-de-services-de-la-bnf-pour-les-acteurs-de-lintelligence-artificielle-ia |
+| A-Wn Cod. 1799** | Österreichische Nationalbibliothek | terms of use: https://www.onb.ac.at/nutzung |
 | A-KN 1010, 1012, 1018 | Stiftsbibliothek Klosterneuburg | Austrian Academy of Sciences |
 | Transkribus books of Section 6.4 (twelve A-Gf volumes, A-BRLm P 33 and P 34, A-BRz fragment, A-LIktu 13, A-SF XI 409, A-VOR 259/1, A-Wda Cod. 3) | various Austrian holdings | Austrian Academy of Sciences |
 | D-Mbs Clm 2766 | Bayerische Staatsbibliothek | CC BY-NC-SA 4.0 |
