@@ -2,6 +2,8 @@
 
 This repository provides a standalone inference package for the `hybrid_hybrid_general_v10` CRNN/Transformer model. It includes the `decoder_lm_diff` melody model, the CantusDB fields needed for concordance scoring, and two page layout models. Training images and internal research documents are not needed to run inference and are not included.
 
+The scripts, split indices and model weights of the 2026 article on joint CTC/attention decoding and repertoire priors are in [`paper_2026/`](paper_2026/README.md).
+
 ## Installation
 
 Use Python 3.12 or newer and install a PyTorch build suitable for your CPU or NVIDIA GPU.
@@ -140,6 +142,8 @@ The independent melody LM often changes the initial clef. The clef lock prevents
 
 The lock raises initial-clef accuracy and slightly lowers token SER, but melody SER does not improve and becomes worse together with concordance scoring. The reason has not been established. The lock therefore stays off by default. It is not tested on an unseen manuscript. Source: `docs/hybrid_vergleich.md` in the training project.
 
+Later image checks for the 2026 article (see `paper_2026/`) showed that the priors spoil initial clefs more often than they correct them on manuscripts the model was trained on, and correct them on unseen early manuscripts. Recommended use: pass `--lm-clef-lock` for manuscripts in the training data and leave it off for unseen manuscripts. This is a deployment heuristic, not a validated rule.
+
 ### CTC without the Transformer decoder
 
 Prefix beam search (width 64) over a CTC-only model, with the unchanged melody LM rescoring the candidates, measured on the fixed 3,084 lines. The CTC-only model is the ONNX export of `hybrid_ctc_lang`; the length bonus and LM weight were selected on validation data.
@@ -208,7 +212,22 @@ The image GT, complete CantusDB, training scripts, and the human/agent review wo
 - `weights/decoder_lm_diff.pt`: melody model trained with psalm differentiae. The two vocabulary JSON files define the token order.
 - `weights/cantus_rag.sqlite`: compact CantusDB extract containing only `source_id`, `folio`, `sequence`, `cantus_id`, and `volpiano`.
 
-This package runs the supplied weights. The full training corpus and training scripts are outside its scope.
+This package runs the supplied weights. The full training corpus is outside its scope; the training and evaluation scripts of the 2026 article are in `paper_2026/scripts/`.
+
+## Licences and image rights
+
+- Code: Apache License 2.0 (`LICENSE`).
+- Model weights and `weights/cantus_rag.sqlite`: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0). The compact CantusDB extract and the melody training data come from the Cantus Database (CC BY-NC-SA 4.0; *Cantus Database*, directed by Debra Lacoste, https://cantusdatabase.org). The AMNLT data used for `general_v10` come from the PRAIG datasets (CC BY-NC 4.0; Fuentes-Martínez et al., *Pattern Recognition* 170, 2026, art. 112094).
+
+The models were trained on staff crops of digitised manuscripts; the images are not distributed. Image rights of the training sources of `general_v10`:
+
+| Sources | Images |
+| --- | --- |
+| CH-E 611, CH-Fco Ms. 2, CH-P 18 (e-codices) | CC BY-NC |
+| D-Mbs Clm 2766 (Bayerische Staatsbibliothek) | CC BY-NC-SA 4.0 |
+| D-KA Aug. LX with addendum (Badische Landesbibliothek), D-KNd 1161 (Dombibliothek Köln), F-Pn lat. 12044 (BnF), A-Wn Cod. 1799** and Mus.Hs. 15484 (Österreichische Nationalbibliothek), A-Gu 17 (Universitätsbibliothek Graz) | public libraries, scientific use |
+| Austrian holdings (A-KN, A-Gf, A-Geras, A-VOR, A-MB, A-SF, A-Wda, A-LIktu, A-BRLm, A-BRz) and the Italian holdings I-BREmd (Taisten) and I-SCass, photographed by the author | Austrian Academy of Sciences |
+| Salzinnes and Solesmes (AMNLT) | CC BY-NC 4.0 (dataset licence) |
 
 ## Acknowledgements
 
